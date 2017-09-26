@@ -47,6 +47,15 @@ public class SyncServer : MonoBehaviour
 #endif
 	private void Update()
 	{
+		var c = Camera.main.transform;
+		RaycastHit hit;
+		Physics.Raycast(c.position, c.forward, out hit);
+		if (hit.distance > 0)
+		{
+			var t = target.transform.parent.transform;
+			t.localPosition = new Vector3(t.localPosition.x, t.localPosition.y, hit.distance);
+			t.localScale = Vector3.one * .0005f * hit.distance;
+		}
 		target.text = text;
 	}
 }
