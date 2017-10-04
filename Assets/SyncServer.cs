@@ -94,7 +94,7 @@ public class SyncServer : MonoBehaviour
 		{
 			go = hit.collider.gameObject.name;
 		}
-		var d = Mathf.Clamp(hit.distance, 1.5f, 3);
+		var d = Mathf.Clamp(hit.distance, .5f, 3);
 		Debug.Log(go);
 		if (go == "sizeplus")
 		{
