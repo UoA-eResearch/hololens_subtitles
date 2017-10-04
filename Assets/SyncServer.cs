@@ -19,6 +19,8 @@ public class SyncServer : MonoBehaviour
 	private GestureRecognizer ManipulationRecognizer;
 	private Vector3 manipulationPreviousPosition = Vector3.zero;
 	private bool manuallyPositioned = false;
+	public GameObject menu;
+	public GameObject cursor;
 
 #if WINDOWS_UWP
 	private DatagramSocket socket;
@@ -70,9 +72,44 @@ public class SyncServer : MonoBehaviour
 	private void Awake()
 	{
 		ManipulationRecognizer = new GestureRecognizer();
-		ManipulationRecognizer.SetRecognizableGestures(GestureSettings.ManipulationTranslate);
+		ManipulationRecognizer.SetRecognizableGestures(GestureSettings.Tap | GestureSettings.ManipulationTranslate);
+		ManipulationRecognizer.TappedEvent += ManipulationRecognizer_TappedEvent;
 		ManipulationRecognizer.ManipulationUpdatedEvent += ManipulationRecognizer_ManipulationUpdatedEvent;
 		ManipulationRecognizer.StartCapturingGestures();
+	}
+
+	private void ManipulationRecognizer_TappedEvent(InteractionSourceKind source, int tapCount, Ray ray)
+	{
+		Debug.Log("tap");
+		var c = Camera.main.transform;
+		RaycastHit hit;
+		Physics.Raycast(c.position, c.forward, out hit);
+		var go = hit.collider.gameObject.name;
+		Debug.Log(go);
+		if (go == "sizeplus")
+		{
+			target.transform.localScale *= 2f;
+		}
+		else if (go == "sizeminus")
+		{
+			target.transform.localScale *= .5f;
+		}
+		else
+		{
+			if (menu.activeInHierarchy)
+			{
+				menu.SetActive(false);
+				cursor.SetActive(false);
+			} else
+			{
+				menu.SetActive(true);
+				cursor.SetActive(true);
+				cursor.transform.position = new Vector3(cursor.transform.position.x, cursor.transform.position.y, hit.distance);
+				menu.transform.position = c.position;
+				menu.transform.rotation = c.rotation;
+				menu.transform.position += c.forward * (hit.distance - .1f);
+			}
+		}
 	}
 
 	private void ManipulationRecognizer_ManipulationUpdatedEvent(InteractionSourceKind source, Vector3 position, Ray ray)
