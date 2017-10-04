@@ -21,6 +21,7 @@ public class SyncServer : MonoBehaviour
 	private bool manuallyPositioned = false;
 	public GameObject menu;
 	public GameObject cursor;
+	private bool rotateText = true;
 
 #if WINDOWS_UWP
 	private DatagramSocket socket;
@@ -57,13 +58,16 @@ public class SyncServer : MonoBehaviour
 		target.text = text;
 		var c = Camera.main.transform;
 		var t = target.transform.parent.transform;
-		t.localRotation = c.localRotation;
+		if (rotateText)
+		{
+			t.localRotation = c.localRotation;
+		}
 		if (manuallyPositioned) return;
 		RaycastHit hit;
 		Physics.Raycast(c.position, c.forward, out hit);
 		if (hit.distance > 0)
 		{
-			t.localPosition = c.localPosition;
+			t.localPosition = new Vector3(c.localPosition.x, c.localPosition.y - .1f, c.localPosition.z);
 			t.localPosition += c.forward * hit.distance;
 			t.localScale = Vector3.one * .0005f * hit.distance;
 		}
@@ -75,6 +79,8 @@ public class SyncServer : MonoBehaviour
 		ManipulationRecognizer.SetRecognizableGestures(GestureSettings.Tap | GestureSettings.ManipulationTranslate);
 		ManipulationRecognizer.TappedEvent += ManipulationRecognizer_TappedEvent;
 		ManipulationRecognizer.ManipulationUpdatedEvent += ManipulationRecognizer_ManipulationUpdatedEvent;
+		ManipulationRecognizer.ManipulationCompletedEvent += ManipulationRecognizer_ManipulationCompletedEvent;
+		ManipulationRecognizer.ManipulationCanceledEvent += ManipulationRecognizer_ManipulationCompletedEvent;
 		ManipulationRecognizer.StartCapturingGestures();
 	}
 
@@ -83,16 +89,29 @@ public class SyncServer : MonoBehaviour
 		Debug.Log("tap");
 		var c = Camera.main.transform;
 		RaycastHit hit;
-		Physics.Raycast(c.position, c.forward, out hit);
-		var go = hit.collider.gameObject.name;
+		string go = "";
+		if (Physics.Raycast(c.position, c.forward, out hit))
+		{
+			go = hit.collider.gameObject.name;
+		}
+		var d = Mathf.Clamp(hit.distance, 1.5f, 3);
 		Debug.Log(go);
 		if (go == "sizeplus")
 		{
-			target.transform.localScale *= 2f;
+			target.transform.localScale *= 1.1f;
 		}
 		else if (go == "sizeminus")
 		{
-			target.transform.localScale *= .5f;
+			target.transform.localScale *= .9f;
+		}
+		else if (go == "reset")
+		{
+			manuallyPositioned = false;
+			menu.SetActive(false);
+			cursor.SetActive(false);
+		} else if (go == "toggle_rotation")
+		{
+			rotateText = !rotateText;
 		}
 		else
 		{
@@ -104,10 +123,10 @@ public class SyncServer : MonoBehaviour
 			{
 				menu.SetActive(true);
 				cursor.SetActive(true);
-				cursor.transform.position = new Vector3(cursor.transform.position.x, cursor.transform.position.y, hit.distance);
+				cursor.transform.localPosition = new Vector3(cursor.transform.localPosition.x, cursor.transform.localPosition.y, d - .1f);
 				menu.transform.position = c.position;
 				menu.transform.rotation = c.rotation;
-				menu.transform.position += c.forward * (hit.distance - .1f);
+				menu.transform.position += c.forward * (d - .1f);
 			}
 		}
 	}
@@ -119,5 +138,10 @@ public class SyncServer : MonoBehaviour
 		manipulationPreviousPosition = position;
 		t.localPosition += moveVector * 2;
 		manuallyPositioned = true;
+	}
+
+	private void ManipulationRecognizer_ManipulationCompletedEvent(InteractionSourceKind source, Vector3 position, Ray ray)
+	{
+		manipulationPreviousPosition = Vector3.zero;
 	}
 }
