@@ -48,7 +48,7 @@ public class SyncServer : MonoBehaviour
 		//Read the message that was received from the UDP echo client.
 		Stream streamIn = args.GetDataStream().AsStreamForRead();
 		StreamReader reader = new StreamReader(streamIn);
-		string message = await reader.ReadLineAsync();
+		string message = reader.ReadToEnd();
 		Debug.Log("MESSAGE: " + message);
 		text = message;
 	}
