@@ -122,7 +122,7 @@ public class SyncServer : MonoBehaviour
 
 			}
 		}
-		var d = Mathf.Clamp(hit.distance, .5f, 3);
+		var d = Mathf.Clamp(hit.distance, 1, 3);
 		Debug.Log(go);
 		if (go == "sizeplus")
 		{
@@ -137,9 +137,22 @@ public class SyncServer : MonoBehaviour
 			manuallyPositioned = false;
 			menu.SetActive(false);
 			cursor.SetActive(false);
+			target.GetComponent<Text>().color = Color.white;
 		} else if (go == "toggle_rotation")
 		{
 			rotateText = !rotateText;
+		} else if (go == "ColorPicker")
+		{
+			Texture2D texture = hit.collider.gameObject.GetComponent<Renderer>().material.mainTexture as Texture2D;
+			Vector2 pixelUV = hit.textureCoord;
+			pixelUV.x *= texture.width;
+			pixelUV.y *= texture.height;
+
+			Color col = texture.GetPixel((int)pixelUV.x, (int)pixelUV.y);
+			if (col != Color.black)
+			{
+				target.GetComponent<Text>().color = col;
+			}
 		}
 		else
 		{
