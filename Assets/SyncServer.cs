@@ -22,6 +22,9 @@ public class SyncServer : MonoBehaviour
 	public GameObject menu;
 	public GameObject cursor;
 	private bool rotateText = true;
+	public AudioSource tapSound;
+	private float lastChange = 0;
+	public float colorInterval = .5f;
 
 #if WINDOWS_UWP
 	private DatagramSocket socket;
@@ -56,20 +59,35 @@ public class SyncServer : MonoBehaviour
 	private void Update()
 	{
 		target.text = text;
+
+		foreach (Text child in menu.GetComponentsInChildren<Text>())
+		{
+			if (Time.time - lastChange > colorInterval) {
+				child.color = Color.white;
+			}
+		}
+
 		var c = Camera.main.transform;
 		var t = target.transform.parent.transform;
 		if (rotateText)
 		{
 			t.localRotation = c.localRotation;
 		}
-		if (manuallyPositioned) return;
 		RaycastHit hit;
 		Physics.Raycast(c.position, c.forward, out hit);
 		if (hit.distance > 0)
 		{
-			t.localPosition = new Vector3(c.localPosition.x, c.localPosition.y - .1f, c.localPosition.z);
-			t.localPosition += c.forward * hit.distance;
-			t.localScale = Vector3.one * .0005f * hit.distance;
+			if (!manuallyPositioned)
+			{
+				t.localPosition = new Vector3(c.localPosition.x, c.localPosition.y - .1f, c.localPosition.z);
+				t.localPosition += c.forward * hit.distance;
+				t.localScale = Vector3.one * .0005f * hit.distance;
+			}
+			var go = hit.collider.gameObject;
+			if (Time.time - lastChange > colorInterval)
+			{
+				go.GetComponentInChildren<Text>().color = Color.yellow;
+			}
 		}
 	}
 
@@ -87,12 +105,22 @@ public class SyncServer : MonoBehaviour
 	private void ManipulationRecognizer_TappedEvent(InteractionSourceKind source, int tapCount, Ray ray)
 	{
 		Debug.Log("tap");
+		tapSound.Play();
 		var c = Camera.main.transform;
 		RaycastHit hit;
 		string go = "";
 		if (Physics.Raycast(c.position, c.forward, out hit))
 		{
 			go = hit.collider.gameObject.name;
+			try
+			{
+				hit.collider.gameObject.GetComponentInChildren<Text>().color = Color.green;
+				lastChange = Time.time;
+			}
+			catch
+			{
+
+			}
 		}
 		var d = Mathf.Clamp(hit.distance, .5f, 3);
 		Debug.Log(go);
@@ -133,6 +161,7 @@ public class SyncServer : MonoBehaviour
 
 	private void ManipulationRecognizer_ManipulationUpdatedEvent(InteractionSourceKind source, Vector3 position, Ray ray)
 	{
+		tapSound.Play();
 		var t = target.transform.parent.transform;
 		var moveVector = position - manipulationPreviousPosition;
 		manipulationPreviousPosition = position;
